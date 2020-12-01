@@ -30,7 +30,7 @@ function App() {
     <div className="App">
       <header>
         <h1>Skrt</h1>
-        {/* <BuildWorkout /> */}
+        {/* <BuildWorkout/> */}
       </header>
 
       <section>
