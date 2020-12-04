@@ -4,9 +4,14 @@ import './App.css';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
+import 'firebase/database';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Card from 'react-bootstrap/Card';
 
 import {useAuthState} from 'react-firebase-hooks/auth';
 import {useCollectionData} from 'react-firebase-hooks/firestore';
+import { isCompositeComponent } from 'react-dom/test-utils';
 
 firebase.initializeApp({
   apiKey: "AIzaSyBDHv9zvw_4nBmdzvkiq8fqK1cDZ7-qn1A",
@@ -20,7 +25,7 @@ firebase.initializeApp({
 });
 
 const auth = firebase.auth();
-const firestore = firebase.firestore();
+const database = firebase.database();
 
 function App() {
 
@@ -30,35 +35,135 @@ function App() {
     <div className="App">
       <header>
         <h1>Skrt</h1>
-        {/* <BuildWorkout/> */}
+        <SignOut />
       </header>
 
       <section>
         {user ? <WorkoutList /> : <SignIn />}
       </section>
+      <MuscleGroup />
+
     </div>
   );
 }
 
+{/* authentication begins */}
 function SignIn() {
   const signInWithGoogle = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithGoogle(provider);
+    auth.signInWithRedirect(provider);
   }
-
+  
   return(
     <button onClick={signInWithGoogle}>Sign in with Google</button>
-  )
-}
-
+    )
+}  
 function SignOut() {
-  return auth.curentUser && (
-    <button onClick={() => auth.signOut()}>Sign Out</button>
-  )
+    return auth.currentUser && (
+      <button onClick={() => auth.signOut()}>Sign Out</button>
+      )
+}
+{/* authentication ends */} 
+
+
+
+
+function GetUpper(){
+  var exercise;
+
+  var ref = database.ref('Paired');
+  ref.on('value', gotData, errData);
 }
 
-function WorkoutList() {}
+function gotData(data) {
+  var exercises = data.val();
+  var keys = Object.keys(exercises);
+  console.log(keys);
+}
 
+function errData(err){
+  console.log("error");
+}
+
+function CreateCheckBoxs(props){
+  return(
+    <div>
+      <label  >
+        <input name={props.value} type="checkbox" onClick={props.onClick}/>
+      {props.value}
+      </label>
+      <br />  
+    </div>
+  );
+}
+
+class WorkoutList extends React.Component {
+   render(){
+     GetUpper();
+    return(<div>Blah</div>)
+  }
+}
+
+class MuscleGroup extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = {
+      checked : []
+    }
+  }
+  
+  renderCheckBoxs(prop){
+    const muscles = prop
+    const checkBoxItems = muscles.map((muscles) =>
+      <CreateCheckBoxs 
+        key={muscles} 
+        value={muscles}
+        onClick={() => this.handleCheckClick(muscles)}
+        />    
+    );
+    return (
+      <ul>
+        {checkBoxItems}
+      </ul>
+    );
+  }
+  
+  
+  handleCheckClick(muscles){
+    const index = this.state.checked.indexOf(muscles);
+  
+    if(index === -1)
+    {
+      this.setState({
+        checked : this.state.checked.concat(muscles)
+      });
+    } else {
+      const newChecked = this.state.checked.slice(0,index).concat(this.state.checked.slice(index+1, this.state.checked.length)) //remove the selected item
+      this.setState({
+        checked : newChecked
+      });
+    }
+    
+  }
+  
+    render(){
+      const muscles = ['Chest','Back','Legs','Arms','Shoulders']
+  
+      return(
+        <div>
+          <Card>
+            <Card.Body>
+              <Card.Title>Muscle Focus</Card.Title>
+              <form>
+                {this.renderCheckBoxs(muscles)}
+              </form>
+            </Card.Body>
+          </Card>
+        </div>
+      )
+    }
+}
+  
 function Exercise() {}
 
 export default App;
