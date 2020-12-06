@@ -5,24 +5,15 @@ import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
 import 'firebase/database';
+import config from './config';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Card from 'react-bootstrap/Card';
 
 import {useAuthState} from 'react-firebase-hooks/auth';
-import {useCollectionData} from 'react-firebase-hooks/firestore';
-import { isCompositeComponent } from 'react-dom/test-utils';
+import {FirebaseDatabaseProvider} from '@react-firebase/database';
 
-firebase.initializeApp({
-  apiKey: "AIzaSyBDHv9zvw_4nBmdzvkiq8fqK1cDZ7-qn1A",
-  authDomain: "workoutgenerator-c3c8e.firebaseapp.com",
-  databaseURL: "https://workoutgenerator-c3c8e.firebaseio.com",
-  projectId: "workoutgenerator-c3c8e",
-  storageBucket: "workoutgenerator-c3c8e.appspot.com",
-  messagingSenderId: "131719223079",
-  appId: "1:131719223079:web:556aed79c8b05641197b02",
-  measurementId: "G-63X20TZEVP"
-});
+firebase.initializeApp(config);
 
 const auth = firebase.auth();
 const database = firebase.database();
@@ -32,20 +23,55 @@ function App() {
   const [user] = useAuthState(auth);
 
   return (
-    <div className="App">
-      <header>
-        <h1>Skrt</h1>
-        <SignOut />
-      </header>
+      <div className="App">
+        <header>
+          <h1>Skrt</h1>
+          <SignOut />
+        </header>
 
-      <section>
-        {user ? <WorkoutList /> : <SignIn />}
-      </section>
-      <MuscleGroup />
+        <section>
+          {user ? <WorkoutList /> : <SignIn />}
+        </section>
+        <MuscleGroup />
+        <Main />
 
-    </div>
+      </div>
   );
 }
+
+class Main extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = {
+      Paired: [],
+      Single: [],
+      exercises : []
+    }
+  }
+
+  getData = () => {
+    let ref = database.ref('/Exercises');
+    return ref.on('value', (snapshot) =>{
+      const state = Object.keys(snapshot.val());
+      this.setState({exercises : state});
+    });
+  }
+
+  componentDidMount() {
+    this.getData();
+  }
+
+  render(){
+    return ( 
+      <div className="Main">
+        {this.state.exercises}
+      </div>
+  );
+}
+}
+
+
+
 
 {/* authentication begins */}
 function SignIn() {
@@ -70,15 +96,20 @@ function SignOut() {
 
 function GetUpper(){
   var exercise;
+  var ref = database.ref('/Exercises');
+  ref.once('value', gotData, errData);
+  //console.log(exercise);
 
-  var ref = database.ref('Paired');
-  ref.on('value', gotData, errData);
+  return ref.once('value').then((snapshot) =>{
+  });
 }
 
 function gotData(data) {
   var exercises = data.val();
   var keys = Object.keys(exercises);
-  console.log(keys);
+  //console.log(keys);
+  //console.log(keys[0]);
+  return exercises;
 }
 
 function errData(err){
@@ -100,7 +131,11 @@ function CreateCheckBoxs(props){
 class WorkoutList extends React.Component {
    render(){
      GetUpper();
-    return(<div>Blah</div>)
+    return(
+    <div>Blah
+      <li name = "list"></li>
+    </div>
+    )
   }
 }
 
