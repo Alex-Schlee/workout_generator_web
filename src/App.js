@@ -11,12 +11,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Card from 'react-bootstrap/Card';
 
 import {useAuthState} from 'react-firebase-hooks/auth';
-import {FirebaseDatabaseProvider} from '@react-firebase/database';
 
 firebase.initializeApp(config);
 
 const auth = firebase.auth();
 const database = firebase.database();
+
+const _ = require('lodash');
 
 function App() {
 
@@ -43,28 +44,80 @@ class Main extends React.Component {
   constructor(props){
     super(props);
     this.state = {
-      Paired: [],
-      Single: [],
-      exercises : []
+      byType: [], //what type of exercise, paired, single, etc
+      byFocus: [], //focus on upper or lower body
+      byGroup : [], //muscle group
+
+      templateMain : [],
+      builtMain: []
     }
   }
 
-  getData = () => {
-    let ref = database.ref('/Exercises');
+  getStoredExerciseData = () => {
+    let ref = database.ref('/Exercises/');
     return ref.on('value', (snapshot) =>{
-      const state = Object.keys(snapshot.val());
-      this.setState({exercises : state});
+      var json = snapshot.toJSON();
+      var upper = "Paired.Upper"
+
+      this.setState({byType : json["Paired"]}); //splice to get all of the exercises -- LODASH HINT HINT
+      this.setState({byFocus : json["Paired"]["Upper"]});
+      this.setState({byGroup : Object.keys(json["Paired"]["Upper"]["Chest"])});
+      console.log(Object.keys(json["Paired"]["Upper"]["Chest"]["Bench"]));
+      console.log(Object.keys(_.get(json, upper)));
     });
   }
 
+  setExerciseData(json) {
+    var types = Object.keys(json);
+    var focuses = Object.keys(json["Paired"]["Upper"]["Chest"]);
+    var groups = Object.keys(json["Paired"]["Upper"]["Chest"]);
+
+  }
+
+
+  getStoredTemplateData = () => {
+    let ref = database.ref('/Templates/Power/'); //Add variables for selected template
+    return ref.on('value', (snapshot) =>{
+      var json = snapshot.toJSON();
+
+      this.setState({templateMain : json["Main"]});
+      this.buildWorkout();
+    });
+  }
+
+  buildWorkout() {
+    var temp = this.state.templateMain;
+    var depth
+    for(let entry in temp) {
+      depth = this.setDepth(Object.keys(temp[entry]).length)
+      console.log(depth);
+    }
+  }
+
+  setDepth(size) {
+    switch(size) {
+      case 1: 
+        return "type";
+      case 2: 
+        return "focus";
+      case 3: 
+        return "group";
+      case 4: 
+        return "exercise";
+      default:
+        return "type";
+    }
+  }
+
   componentDidMount() {
-    this.getData();
+    this.getStoredExerciseData();
+    this.getStoredTemplateData();
   }
 
   render(){
     return ( 
       <div className="Main">
-        {this.state.exercises}
+      {this.state.byGroup}
       </div>
   );
 }
@@ -73,7 +126,7 @@ class Main extends React.Component {
 
 
 
-{/* authentication begins */}
+/* authentication begins */
 function SignIn() {
   const signInWithGoogle = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -89,16 +142,14 @@ function SignOut() {
       <button onClick={() => auth.signOut()}>Sign Out</button>
       )
 }
-{/* authentication ends */} 
+/* authentication ends */
 
 
 
 
 function GetUpper(){
-  var exercise;
   var ref = database.ref('/Exercises');
   ref.once('value', gotData, errData);
-  //console.log(exercise);
 
   return ref.once('value').then((snapshot) =>{
   });
@@ -199,6 +250,4 @@ class MuscleGroup extends React.Component {
     }
 }
   
-function Exercise() {}
-
 export default App;
