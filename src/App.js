@@ -44,9 +44,7 @@ class Main extends React.Component {
   constructor(props){
     super(props);
     this.state = {
-      byType: [], //what type of exercise, paired, single, etc
-      byFocus: [], //focus on upper or lower body
-      byGroup : [], //muscle group
+      exercises: [], //what type of exercise, paired, single, etc
 
       templateMain : [],
       builtMain: []
@@ -56,22 +54,8 @@ class Main extends React.Component {
   getStoredExerciseData = () => {
     let ref = database.ref('/Exercises/');
     return ref.on('value', (snapshot) =>{
-      var json = snapshot.toJSON();
-      var upper = "Paired.Upper"
-
-      this.setState({byType : json["Paired"]}); //splice to get all of the exercises -- LODASH HINT HINT
-      this.setState({byFocus : json["Paired"]["Upper"]});
-      this.setState({byGroup : Object.keys(json["Paired"]["Upper"]["Chest"])});
-      console.log(Object.keys(json["Paired"]["Upper"]["Chest"]["Bench"]));
-      console.log(Object.keys(_.get(json, upper)));
+      this.setState({exercises : snapshot.toJSON()}); //splice to get all of the exercises -- LODASH HINT HINT
     });
-  }
-
-  setExerciseData(json) {
-    var types = Object.keys(json);
-    var focuses = Object.keys(json["Paired"]["Upper"]["Chest"]);
-    var groups = Object.keys(json["Paired"]["Upper"]["Chest"]);
-
   }
 
 
@@ -89,21 +73,22 @@ class Main extends React.Component {
     var temp = this.state.templateMain;
     var depth
     for(let entry in temp) {
-      depth = this.setDepth(Object.keys(temp[entry]).length)
+      depth = this.setDepth(temp[entry])
       console.log(depth);
+      console.log(_.get(this.state.exercises, depth));
     }
   }
 
-  setDepth(size) {
-    switch(size) {
+  setDepth(entry) {
+    switch(Object.keys(entry).length) {
       case 1: 
-        return "type";
+        return entry.type;
       case 2: 
-        return "focus";
+        return entry.type + "." + entry.focus;
       case 3: 
-        return "group";
+        return entry.type + "." + entry.focus + "." + entry.group;
       case 4: 
-        return "exercise";
+        return entry.type + "." + entry.focus + "." + entry.group + "." + entry.exercise;
       default:
         return "type";
     }
