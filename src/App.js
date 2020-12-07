@@ -31,10 +31,10 @@ function App() {
         </header>
 
         <section>
-          {user ? <WorkoutList /> : <SignIn />}
+          {user ? <Main /> : <SignIn />}
         </section>
         <MuscleGroup />
-        <Main />
+        
 
       </div>
   );
@@ -130,28 +130,6 @@ function SignOut() {
 /* authentication ends */
 
 
-
-
-function GetUpper(){
-  var ref = database.ref('/Exercises');
-  ref.once('value', gotData, errData);
-
-  return ref.once('value').then((snapshot) =>{
-  });
-}
-
-function gotData(data) {
-  var exercises = data.val();
-  var keys = Object.keys(exercises);
-  //console.log(keys);
-  //console.log(keys[0]);
-  return exercises;
-}
-
-function errData(err){
-  console.log("error");
-}
-
 function CreateCheckBoxs(props){
   return(
     <div>
@@ -162,17 +140,6 @@ function CreateCheckBoxs(props){
       <br />  
     </div>
   );
-}
-
-class WorkoutList extends React.Component {
-   render(){
-     GetUpper();
-    return(
-    <div>Blah
-      <li name = "list"></li>
-    </div>
-    )
-  }
 }
 
 class MuscleGroup extends React.Component {
