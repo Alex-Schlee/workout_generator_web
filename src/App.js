@@ -69,12 +69,16 @@ class Main extends React.Component {
   }
 
   buildWorkout() {
-    var temp = this.state.templateMain;
-    for(let entry in temp) {
-      var treeDepth = this.setDepth(temp[entry])
-      var exerciseArray = this.getAllSubExercises(_.get(this.state.exercises, treeDepth));
-      console.log(exerciseArray);
+    var workout = [];
+    for(let entry in this.state.templateMain) {
+      //get all possible execises based on the templates depth level
+      var exerciseArray = this.getAllSubExercises(_.get(this.state.exercises, this.setDepth(this.state.templateMain[entry])));
+
+      //filter out exercises already used
+      exerciseArray = exerciseArray.filter(val => workout.indexOf(val) == -1);
+      workout.push(exerciseArray[Math.floor(Math.random() * exerciseArray.length)]);
     }
+    console.log(workout);
   }
 
   getAllSubExercises(jsonTree){
