@@ -11,6 +11,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Card from 'react-bootstrap/Card';
 
 import {useAuthState} from 'react-firebase-hooks/auth';
+import { get } from 'lodash';
 
 firebase.initializeApp(config);
 
@@ -33,8 +34,6 @@ function App() {
         <section>
           {user ? <Main /> : <SignIn />}
         </section>
-        <MuscleGroup />
-        
 
       </div>
   );
@@ -71,12 +70,24 @@ class Main extends React.Component {
 
   buildWorkout() {
     var temp = this.state.templateMain;
-    var depth
     for(let entry in temp) {
-      depth = this.setDepth(temp[entry])
-      console.log(depth);
-      console.log(_.get(this.state.exercises, depth));
+      var treeDepth = this.setDepth(temp[entry])
+      var exerciseArray = this.getAllSubExercises(_.get(this.state.exercises, treeDepth));
+      console.log(exerciseArray);
     }
+  }
+
+  getAllSubExercises(jsonTree){
+    var allExercises = [];
+    for(var key in jsonTree){
+        if(!jsonTree.hasOwnProperty("ExerciseName"))
+        {
+          allExercises = allExercises.concat(this.getAllSubExercises(jsonTree[key]));
+        } else {
+          return jsonTree;
+        }
+      }
+    return allExercises;
   }
 
   setDepth(entry) {
@@ -102,7 +113,7 @@ class Main extends React.Component {
   render(){
     return ( 
       <div className="Main">
-      {this.state.byGroup}
+      {Object.keys(this.state.exercises)}
       </div>
   );
 }
