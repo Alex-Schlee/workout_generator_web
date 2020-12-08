@@ -69,16 +69,42 @@ class Main extends React.Component {
   }
 
   buildWorkout() {
-    var workout = [];
+    var workoutArray = [];
     for(let entry in this.state.templateMain) {
       //get all possible execises based on the templates depth level
       var exerciseArray = this.getAllSubExercises(_.get(this.state.exercises, this.setDepth(this.state.templateMain[entry])));
-
       //filter out exercises already used
-      exerciseArray = exerciseArray.filter(val => workout.indexOf(val) == -1);
-      workout.push(exerciseArray[Math.floor(Math.random() * exerciseArray.length)]);
+      exerciseArray = this.filterUsedExercises(exerciseArray, workoutArray);
+
+      workoutArray = workoutArray.concat(this.getObjectExercises(exerciseArray[Math.floor(Math.random() * exerciseArray.length)]));
     }
-    console.log(workout);
+    console.log(workoutArray);
+  }
+
+  filterUsedExercises(exerciseArray, workoutArray){
+    var filteredExercises = [];
+    for(var key in exerciseArray){
+      var dupe = false;
+      //As much as I hate nested loops this must stay, unless I can find a method to search objects with properties equaling specific values
+      for(var val in _.values(exerciseArray[key])){
+        if(workoutArray.indexOf(_.values(exerciseArray[key])[val]) !== -1)
+          dupe = true;
+      }
+
+      if(dupe === false)
+        filteredExercises.push(exerciseArray[key]);
+    }
+    return filteredExercises
+  }
+
+  getObjectExercises(object){
+    var exercises = [];
+    for(var key in object)
+    {
+      if(object[key] !== "")
+        exercises.push(object[key]);
+    }
+    return exercises;
   }
 
   getAllSubExercises(jsonTree){
