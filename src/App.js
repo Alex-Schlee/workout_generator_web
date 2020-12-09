@@ -9,9 +9,10 @@ import config from './config';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Card from 'react-bootstrap/Card';
+import Accordion from 'react-bootstrap/Accordion';
+import Button from 'react-bootstrap/Button';
 
 import {useAuthState} from 'react-firebase-hooks/auth';
-import { get } from 'lodash';
 
 firebase.initializeApp(config);
 
@@ -68,6 +69,11 @@ class Main extends React.Component {
     });
   }
 
+  componentDidMount() {
+    this.getStoredExerciseData();
+    this.getStoredTemplateData();
+  }
+
   buildWorkout() {
     var workoutArray = [];
     for(let entry in this.state.templateMain) {
@@ -78,33 +84,8 @@ class Main extends React.Component {
 
       workoutArray = workoutArray.concat(this.getObjectExercises(exerciseArray[Math.floor(Math.random() * exerciseArray.length)]));
     }
+    this.setState({builtMain : workoutArray})
     console.log(workoutArray);
-  }
-
-  filterUsedExercises(exerciseArray, workoutArray){
-    var filteredExercises = [];
-    for(var key in exerciseArray){
-      var dupe = false;
-      //As much as I hate nested loops this must stay, unless I can find a method to search objects with properties equaling specific values
-      for(var val in _.values(exerciseArray[key])){
-        if(workoutArray.indexOf(_.values(exerciseArray[key])[val]) !== -1)
-          dupe = true;
-      }
-
-      if(dupe === false)
-        filteredExercises.push(exerciseArray[key]);
-    }
-    return filteredExercises
-  }
-
-  getObjectExercises(object){
-    var exercises = [];
-    for(var key in object)
-    {
-      if(object[key] !== "")
-        exercises.push(object[key]);
-    }
-    return exercises;
   }
 
   getAllSubExercises(jsonTree){
@@ -135,21 +116,60 @@ class Main extends React.Component {
     }
   }
 
-  componentDidMount() {
-    this.getStoredExerciseData();
-    this.getStoredTemplateData();
+  filterUsedExercises(exerciseArray, workoutArray){
+    var filteredExercises = [];
+    for(var key in exerciseArray){
+      var dupe = false;
+      //As much as I hate nested loops this must stay, unless I can find a method to search objects with properties equaling specific values
+      for(var val in _.values(exerciseArray[key])){
+        if(workoutArray.indexOf(_.values(exerciseArray[key])[val]) !== -1)
+          dupe = true;
+      }
+
+      if(dupe === false)
+        filteredExercises.push(exerciseArray[key]);
+    }
+    return filteredExercises
+  }
+
+  getObjectExercises(object){
+    var exercises = [];
+    for(var key in object)
+    {
+      if(object[key] !== "")
+        exercises.push(object[key]);
+    }
+    return exercises;
   }
 
   render(){
     return ( 
       <div className="Main">
-      {Object.keys(this.state.exercises)}
+        <WorkoutList workout={this.state.builtMain} />
       </div>
   );
 }
 }
 
-
+function WorkoutList(props){
+  const workout = props.workout;
+  const listItems = workout.map((exercise) =>
+    <li key={exercise}>
+      <Accordion defaultActiveKey="0">
+        <Card>
+          <Card.Header>
+            <Accordion.Toggle as={Button} variant="link" eventKey="0">
+            {exercise}
+            </Accordion.Toggle>
+          </Card.Header>
+        </Card>
+      </Accordion>
+    </li>
+  );
+  return(
+    <ul>{listItems}</ul>
+  );
+}
 
 
 /* authentication begins */
@@ -158,11 +178,11 @@ function SignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithRedirect(provider);
   }
-  
   return(
     <button onClick={signInWithGoogle}>Sign in with Google</button>
     )
 }  
+
 function SignOut() {
     return auth.currentUser && (
       <button onClick={() => auth.signOut()}>Sign Out</button>
@@ -170,77 +190,4 @@ function SignOut() {
 }
 /* authentication ends */
 
-
-function CreateCheckBoxs(props){
-  return(
-    <div>
-      <label  >
-        <input name={props.value} type="checkbox" onClick={props.onClick}/>
-      {props.value}
-      </label>
-      <br />  
-    </div>
-  );
-}
-
-class MuscleGroup extends React.Component {
-  constructor(props){
-    super(props);
-    this.state = {
-      checked : []
-    }
-  }
-  
-  renderCheckBoxs(prop){
-    const muscles = prop
-    const checkBoxItems = muscles.map((muscles) =>
-      <CreateCheckBoxs 
-        key={muscles} 
-        value={muscles}
-        onClick={() => this.handleCheckClick(muscles)}
-        />    
-    );
-    return (
-      <ul>
-        {checkBoxItems}
-      </ul>
-    );
-  }
-  
-  
-  handleCheckClick(muscles){
-    const index = this.state.checked.indexOf(muscles);
-  
-    if(index === -1)
-    {
-      this.setState({
-        checked : this.state.checked.concat(muscles)
-      });
-    } else {
-      const newChecked = this.state.checked.slice(0,index).concat(this.state.checked.slice(index+1, this.state.checked.length)) //remove the selected item
-      this.setState({
-        checked : newChecked
-      });
-    }
-    
-  }
-  
-    render(){
-      const muscles = ['Chest','Back','Legs','Arms','Shoulders']
-  
-      return(
-        <div>
-          <Card>
-            <Card.Body>
-              <Card.Title>Muscle Focus</Card.Title>
-              <form>
-                {this.renderCheckBoxs(muscles)}
-              </form>
-            </Card.Body>
-          </Card>
-        </div>
-      )
-    }
-}
-  
 export default App;
