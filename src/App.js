@@ -8,11 +8,15 @@ import 'firebase/database';
 import config from './config';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Card from 'react-bootstrap/Card';
-import Accordion from 'react-bootstrap/Accordion';
-import Button from 'react-bootstrap/Button';
 
 import {useAuthState} from 'react-firebase-hooks/auth';
+import Card from 'react-bootstrap/Card';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Dropdown from 'react-bootstrap/Dropdown';
+import Button from 'react-bootstrap/Button';
 
 firebase.initializeApp(config);
 
@@ -28,14 +32,39 @@ function App() {
   return (
       <div className="App">
         <header>
-          <h1>Skrt</h1>
-          <SignOut />
+          <Container>
+            <Row>
+              <Col></Col>
+
+              <Col xs={6}>
+                <h1>Skrt</h1>
+              </Col>
+
+              <Col>
+                <SignOut />
+              </Col>
+            </Row>
+          </Container>
         </header>
 
-        <section>
-          {user ? <Main /> : <SignIn />}
-        </section>
+        <Container>
+          <Row>
+            <Col></Col>
 
+            <Col xs={6}>
+              <Card>
+                <Card.Body>
+                  <section>
+                    {user ? <Main /> : <SignIn />}
+                  </section> 
+                </Card.Body>
+              </Card>
+            </Col>
+
+            <Col></Col>
+          </Row>
+
+        </Container>
       </div>
   );
 }
@@ -45,19 +74,24 @@ class Main extends React.Component {
     super(props);
     this.state = {
       exercises: [], //what type of exercise, paired, single, etc
-
+      listTemplates: [],
+      selectedTemplate: "Templates",
       templateMain : [],
       builtMain: []
     }
   }
 
+  handleTemplateSelectionClick(template){
+    this.setState({selectedTemplate: template});
+  }
+
+  //Database Start
   getStoredExerciseData = () => {
     let ref = database.ref('/Exercises/');
     return ref.on('value', (snapshot) =>{
       this.setState({exercises : snapshot.toJSON()}); //splice to get all of the exercises -- LODASH HINT HINT
     });
   }
-
 
   getStoredTemplateData = () => {
     let ref = database.ref('/Templates/Power/'); //Add variables for selected template
@@ -69,11 +103,21 @@ class Main extends React.Component {
     });
   }
 
+  getStoredListTemplatesData = () => {
+    let ref = database.ref('/ListTemplates');
+    return ref.on('value', (snapshot) =>{
+      this.setState({listTemplates: Object.keys(snapshot.toJSON())});
+    })
+  }
+
   componentDidMount() {
     this.getStoredExerciseData();
     this.getStoredTemplateData();
+    this.getStoredListTemplatesData();
   }
+  //Database Ends
 
+  //Workout Business Logic Start
   buildWorkout() {
     var workoutArray = [];
     for(let entry in this.state.templateMain) {
@@ -141,10 +185,16 @@ class Main extends React.Component {
     }
     return exercises;
   }
+  //Workout Business Logic Ends
 
   render(){
     return ( 
       <div className="Main">
+        <Configurations 
+          exercises={this.state.exercises} 
+          selectedTemplate={this.state.selectedTemplate} 
+          listTemplates={this.state.listTemplates} 
+          onClick={template => this.handleTemplateSelectionClick(template)}/>
         <WorkoutList workout={this.state.builtMain} />
       </div>
   );
@@ -154,22 +204,53 @@ class Main extends React.Component {
 function WorkoutList(props){
   const workout = props.workout;
   const listItems = workout.map((exercise) =>
-    <li key={exercise}>
-      <Accordion defaultActiveKey="0">
-        <Card>
-          <Card.Header>
-            <Accordion.Toggle as={Button} variant="link" eventKey="0">
-            {exercise}
-            </Accordion.Toggle>
-          </Card.Header>
-        </Card>
-      </Accordion>
-    </li>
+    <ListGroup.Item key={exercise}>
+      <Card.Title>{exercise}</Card.Title>
+      <Card.Text>TODO: REPS PER EXERCISE</Card.Text>
+    </ListGroup.Item>
   );
   return(
-    <ul>{listItems}</ul>
+    <ListGroup>{listItems}</ListGroup>
   );
 }
+
+class Configurations extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = {
+    } 
+  }
+
+  renderDropdownList(list){
+    const templates = list;
+    const dropdownItems = templates.map((item) =>
+      <Dropdown.Item key={item} onClick={() => this.props.onClick(item)}>
+        {item}
+      </Dropdown.Item>
+    );
+    return(
+      <Dropdown.Menu>
+        {dropdownItems}
+      </Dropdown.Menu>
+    )
+  }
+
+  render(){
+    return(
+      <Dropdown>
+        <Dropdown.Toggle id="dropdown-template-button">
+          {this.props.selectedTemplate}
+        </Dropdown.Toggle>
+        {this.renderDropdownList(this.props.listTemplates)}
+      </Dropdown>
+    )
+  }
+}
+
+
+
+
+
 
 
 /* authentication begins */
@@ -179,13 +260,13 @@ function SignIn() {
     auth.signInWithRedirect(provider);
   }
   return(
-    <button onClick={signInWithGoogle}>Sign in with Google</button>
+    <Button onClick={signInWithGoogle}>Sign in with Google</Button>
     )
 }  
 
 function SignOut() {
     return auth.currentUser && (
-      <button onClick={() => auth.signOut()}>Sign Out</button>
+      <Button onClick={() => auth.signOut()}>Sign Out</Button>
       )
 }
 /* authentication ends */
