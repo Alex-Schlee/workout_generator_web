@@ -75,7 +75,7 @@ class Main extends React.Component {
     this.state = {
       exercises: [], //what type of exercise, paired, single, etc
       listTemplates: [],
-      selectedTemplate: "Templates",
+      selectedTemplate: "Select Template",
       templateMain : [],
       builtMain: []
     }
@@ -83,6 +83,8 @@ class Main extends React.Component {
 
   handleTemplateSelectionClick(template){
     this.setState({selectedTemplate: template});
+    this.getStoredTemplateData(template);
+    //this.buildWorkout();
   }
 
   //Database Start
@@ -93,13 +95,12 @@ class Main extends React.Component {
     });
   }
 
-  getStoredTemplateData = () => {
-    let ref = database.ref('/Templates/Power/'); //Add variables for selected template
-    return ref.on('value', (snapshot) =>{
+  getStoredTemplateData = (template) => {
+    let ref = database.ref('/Templates/' + template); //Add variables for selected template
+    return ref.once('value').then((snapshot) =>{
       var json = snapshot.toJSON();
 
       this.setState({templateMain : json["Main"]});
-      this.buildWorkout();
     });
   }
 
@@ -112,7 +113,6 @@ class Main extends React.Component {
 
   componentDidMount() {
     this.getStoredExerciseData();
-    this.getStoredTemplateData();
     this.getStoredListTemplatesData();
   }
   //Database Ends
@@ -120,16 +120,47 @@ class Main extends React.Component {
   //Workout Business Logic Start
   buildWorkout() {
     var workoutArray = [];
+    var secondaryArray = [];
     for(let entry in this.state.templateMain) {
-      //get all possible execises based on the templates depth level
+      //console.log(this.state.templateMain[entry]);
+      //get all possible exercises based on the templates depth level
       var exerciseArray = this.getAllSubExercises(_.get(this.state.exercises, this.setDepth(this.state.templateMain[entry])));
       //filter out exercises already used
       exerciseArray = this.filterUsedExercises(exerciseArray, workoutArray);
-
-      workoutArray = workoutArray.concat(this.getObjectExercises(exerciseArray[Math.floor(Math.random() * exerciseArray.length)]));
+      workoutArray.push(exerciseArray[Math.floor(Math.random() * exerciseArray.length)]);
     }
-    this.setState({builtMain : workoutArray})
-    console.log(workoutArray);
+    this.setState({builtMain : this.convertToArray(this.orderByWeight(workoutArray))})
+    console.log(this.orderByWeight(workoutArray));
+  }
+
+  convertToArray(workoutArray){
+    var convertedArray = [];
+    for(var key in workoutArray)
+    {
+      convertedArray.push(workoutArray[key].ExerciseName);
+    }
+    return convertedArray
+  }
+
+  orderByWeight(ExerciseList){
+    var i = 1;    
+    var val = ExerciseList[i];
+
+
+    while(i < ExerciseList.length)
+    {
+      var val = ExerciseList[i];
+      var j = i-1;
+      while(j >= 0 && ExerciseList[j].Weight > val.Weight)
+      {
+
+        ExerciseList[j+1] = ExerciseList[j];
+        j = j-1;
+      }
+      ExerciseList[j+1] = val;
+      i = i+1;
+    }
+    return(ExerciseList);
   }
 
   getAllSubExercises(jsonTree){
@@ -146,32 +177,27 @@ class Main extends React.Component {
   }
 
   setDepth(entry) {
-    switch(Object.keys(entry).length) {
-      case 1: 
-        return entry.type;
-      case 2: 
-        return entry.type + "." + entry.focus;
-      case 3: 
-        return entry.type + "." + entry.focus + "." + entry.group;
-      case 4: 
-        return entry.type + "." + entry.focus + "." + entry.group + "." + entry.exercise;
-      default:
-        return "type";
-    }
+    if(entry.group === "")
+      return entry.focus;
+    else if(entry.exercise === "")
+      return entry.focus + "." + entry.group;
+    else
+      return entry.focus + "." + entry.group + "." + entry.exercise;
   }
 
   filterUsedExercises(exerciseArray, workoutArray){
     var filteredExercises = [];
-    for(var key in exerciseArray){
+    for(var i in exerciseArray){
       var dupe = false;
       //As much as I hate nested loops this must stay, unless I can find a method to search objects with properties equaling specific values
-      for(var val in _.values(exerciseArray[key])){
-        if(workoutArray.indexOf(_.values(exerciseArray[key])[val]) !== -1)
-          dupe = true;
+      for(var j in workoutArray)
+      {  
+        if(workoutArray[j] !== undefined && workoutArray[j].ExerciseName.indexOf(exerciseArray[i].ExerciseName) !== -1)
+        dupe = true;
       }
-
+      
       if(dupe === false)
-        filteredExercises.push(exerciseArray[key]);
+        filteredExercises.push(exerciseArray[i]);
     }
     return filteredExercises
   }
@@ -194,7 +220,9 @@ class Main extends React.Component {
           exercises={this.state.exercises} 
           selectedTemplate={this.state.selectedTemplate} 
           listTemplates={this.state.listTemplates} 
-          onClick={template => this.handleTemplateSelectionClick(template)}/>
+          onClick={template => this.handleTemplateSelectionClick(template)}
+          onBuildWorkoutClick={ () => this.buildWorkout()}
+          />
         <WorkoutList workout={this.state.builtMain} />
       </div>
   );
@@ -229,20 +257,33 @@ class Configurations extends React.Component {
       </Dropdown.Item>
     );
     return(
-      <Dropdown.Menu>
-        {dropdownItems}
-      </Dropdown.Menu>
+
+              <Dropdown.Menu>
+                {dropdownItems}
+              </Dropdown.Menu>
+
     )
   }
 
   render(){
     return(
-      <Dropdown>
-        <Dropdown.Toggle id="dropdown-template-button">
-          {this.props.selectedTemplate}
-        </Dropdown.Toggle>
-        {this.renderDropdownList(this.props.listTemplates)}
-      </Dropdown>
+    <Card.Text>
+      <Row>
+        <Col>
+          <Dropdown>
+            <Dropdown.Toggle id="dropdown-template-button">{this.props.selectedTemplate}</Dropdown.Toggle>
+            {this.renderDropdownList(this.props.listTemplates)}
+          </Dropdown>
+        </Col>
+
+        <Col>
+        </Col>
+
+        <Col>
+          <Button onClick={() => this.props.onBuildWorkoutClick()}>Build Workout</Button>
+        </Col>
+      </Row>
+    </Card.Text>
     )
   }
 }
