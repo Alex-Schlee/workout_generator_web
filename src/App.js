@@ -37,7 +37,7 @@ function App() {
               <Col></Col>
 
               <Col xs={6}>
-                <h1>Skrt</h1>
+                <h1>Rando WOG V1</h1>
               </Col>
 
               <Col>
@@ -120,7 +120,6 @@ class Main extends React.Component {
   //Workout Business Logic Start
   buildWorkout() {
     var workoutArray = [];
-    var secondaryArray = [];
     for(let entry in this.state.templateMain) {
       //console.log(this.state.templateMain[entry]);
       //get all possible exercises based on the templates depth level
@@ -144,7 +143,6 @@ class Main extends React.Component {
 
   orderByWeight(ExerciseList){
     var i = 1;    
-    var val = ExerciseList[i];
 
 
     while(i < ExerciseList.length)
@@ -234,7 +232,6 @@ function WorkoutList(props){
   const listItems = workout.map((exercise) =>
     <ListGroup.Item key={exercise}>
       <Card.Title>{exercise}</Card.Title>
-      <Card.Text>TODO: REPS PER EXERCISE</Card.Text>
     </ListGroup.Item>
   );
   return(
